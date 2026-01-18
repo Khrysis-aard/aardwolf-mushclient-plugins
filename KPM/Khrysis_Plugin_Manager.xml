@@ -19,7 +19,7 @@
 ============================================================================
                      KHRYSIS PLUGIN MANAGER (KPM)
 ============================================================================
-v1.44
+v1.45
 - Centralized Update Hub for all Khrysis-aard plugins.
 - Dashboard Support: Clickable Install/Update/Remove links.
 - Self-Update Logic: Use 'kpm update' to keep the manager current.
