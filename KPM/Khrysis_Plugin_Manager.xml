@@ -11,7 +11,7 @@
    save_state="y"
    date_written="2025-02-01 16:11:39"
    requires="5.07"
-   version="1.44"
+   version="1.45"
 >
 
 <description trim="y">
@@ -134,7 +134,7 @@ local pluginList = {
         name = "wid",
         id   = "16537fffd375971a606cc8c0",
         file = "wid.xml",
-        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/wid.xml"
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/wid/wid.xml"
     },
 }
 
