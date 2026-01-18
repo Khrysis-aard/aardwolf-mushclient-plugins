@@ -10,7 +10,7 @@
    save_state="y"
    date_written="2022-01-09 09:40:16"
    requires="5.07"
-   version="1.2"
+   version="1.21"
    >
 <description trim="y">
 <![CDATA[
@@ -169,46 +169,49 @@ COMMANDS:
   </trigger>
 
   <trigger
-  enabled="n"
-  match="^(\{eqdata\}|\{eqdata \d+\}|\{\/eqdata\})$"
-  omit_from_output="y"
-  regexp="y"
-  sequence="100"
-  send_to="12"
-  group="eqdata"
->
-<send>
-  local line = "%0" -- %0 is the entire matched line
-  
-  if string.find(line, "{eqdata") then
-      -- Start of data
-      has_primary = false
-      has_secondary = false
-	  has_held = false
-	  has_held_keep = false
-      
-      -- SAFETY TIMEOUT: If /eqdata isn't seen in 3 seconds, force unlock
-      DoAfterSpecial(3, 'is_updating = false EnableTriggerGroup("eqdata", false)', 12)
-      
-  elseif string.find(line, "{/eqdata}") then
-      -- End of data
-      EnableTriggerGroup("eqdata", false)
-      is_updating = false
-      
-      -- Save the results found during this scan
-      SetVariable("has_primary", has_primary and "1" or "0")
-      SetVariable("has_secondary", has_secondary and "1" or "0")
-	  SetVariable("has_held", has_held and "1" or "0")
-      SaveState()
-	  
-	  -- Show completion message ONLY on the broadcast sync
-      if show_sync_message then
-          ColourNote("darkorange", "", "WID: Initial ID sync complete!")
-          show_sync_message = false
-      end
-  end
-</send>
-</trigger>
+    enabled="n"
+    match="^{eqdata}$"
+    omit_from_output="y"
+    regexp="y"
+    sequence="10"
+    send_to="12"
+    group="wid_sync_gate"
+  >
+  <send>
+    has_primary = false
+    has_secondary = false
+    has_held = false
+    has_held_keep = false
+    EnableTriggerGroup("eqdata", true)
+  </send>
+  </trigger>
+
+  <trigger
+    enabled="n"
+    match="^{/eqdata}$"
+    omit_from_output="y"
+    regexp="y"
+    sequence="10"
+    send_to="12"
+    group="wid_sync_gate"
+  >
+  <send>
+    -- Shut everything down
+    EnableTriggerGroup("eqdata", false)
+    EnableTriggerGroup("wid_sync_gate", false)
+    is_updating = false
+    
+    SetVariable("has_primary", has_primary and "1" or "0")
+    SetVariable("has_secondary", has_secondary and "1" or "0")
+    SetVariable("has_held", has_held and "1" or "0")
+    SaveState()
+
+    if show_sync_message then
+        ColourNote("darkorange", "", "WID: Initial ID sync complete!")
+        show_sync_message = false
+    end
+  </send>
+  </trigger>
 </triggers>
 
 <aliases>
@@ -401,10 +404,16 @@ end
 function SyncEquipment()
   if not is_updating then
     is_updating = true
-    EnableTriggerGroup("eqdata", true)
+    -- Turn on the Gatekeepers, they will turn on eqdata when the tag arrives
+    EnableTriggerGroup("wid_sync_gate", true) 
     SendNoEcho("eqdata")
-    -- Safety: If eqdata fails to respond, reset in 3 seconds
-    DoAfterSpecial(3, 'is_updating = false EnableTriggerGroup("eqdata", false)', 12)
+    
+    -- Safety: Kill everything if it hangs
+    -- DoAfterSpecial(3, [[
+     -- is_updating = false 
+      -- EnableTriggerGroup("eqdata", false) 
+      -- EnableTriggerGroup("wid_sync_gate", false)
+    -- ]], 12)
   end
 end
 
@@ -419,7 +428,7 @@ function OnHelp ()
   ColourNote("cyan", "", "  wid      ", "silver", "", " - Status: View tracked IDs and current equip state.")
   ColourNote("cyan", "", "  wid help ", "silver", "", " - Show this help information.")
   Note("")
-  ColourNote("orange", "", "  wid off  ", "silver", "", "- Manual Sync: Force a re-scan of equipment IDs.")
+  ColourNote("orange", "", "  wid off  ", "silver", "", "- Manual Sync: Force a re-scan of equipment IDs and reset if stuck.")
   ColourNote("silver", "", "============================================================")
   Note("") 
 end
