@@ -17,7 +17,7 @@
 ============================================================================
                         WID TRACKER CHANGE LOG
 ============================================================================
-v1.200
+v1.210
 - Smart Re-equipping: Improved logic for Dual-Wield and Held modes.
 - Keep-Flag Awareness: Now handles temporary staves/items correctly.
 - Enhanced UI: Improved status alignment and visual layout.
@@ -435,3 +435,4 @@ end
 ]]>
 </script>
 </muclient>
+
