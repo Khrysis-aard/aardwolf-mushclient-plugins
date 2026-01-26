@@ -9,7 +9,7 @@ A utility for Aardwolf MUD that captures and stores the unique identification nu
 | **wid** | Displays the names and IDs currently stored in the tracker. |
 | **won** | Equips your stored IDs based on your preferred mode (Dual/Held). |
 | **woff** | Removes the weapons/items currently tracked by the plugin. |
-| **wid off** | **Manual Sync**: Forces the plugin to re-scan your equipment and update IDs. |
+| **wid sync** | **Manual Sync**: Forces the plugin to re-scan your equipment and update IDs. |
 | **wid help** | Displays the in-game help menu. |
 
 ## Features
