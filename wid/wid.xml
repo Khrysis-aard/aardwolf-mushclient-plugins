@@ -10,14 +10,14 @@
    save_state="y"
    date_written="2022-01-09 09:40:16"
    requires="5.07"
-   version="1.21"
+   version="1.22"
    >
 <description trim="y">
 <![CDATA[
 ============================================================================
                         WID TRACKER CHANGE LOG
 ============================================================================
-v1.210
+v1.220
 - Smart Re-equipping: Improved logic for Dual-Wield and Held modes.
 - Keep-Flag Awareness: Now handles temporary staves/items correctly.
 - Enhanced UI: Improved status alignment and visual layout.
@@ -27,7 +27,7 @@ COMMANDS:
 * won            : Smart-equip missing tracked weapons.
 * woff           : Smart-remove currently tracked weapons.
 * wid            : View current IDs, names, and preferred mode.
-* wid off        : Manual Sync - Force a re-scan of equipment IDs.
+* wid sync       : Manual Sync - Force a re-scan of equipment IDs.
 * wid help       : View detailed help information.
 ============================================================================
 ]]>
@@ -207,7 +207,7 @@ COMMANDS:
     SaveState()
 
     if show_sync_message then
-        ColourNote("darkorange", "", "WID: Initial ID sync complete!")
+        ColourNote("darkorange", "", "WID: Sync complete!")
         show_sync_message = false
     end
   </send>
@@ -305,10 +305,10 @@ COMMANDS:
 </send>
 </alias>
   <alias
-  match="wid"
-  enabled="y"
-  send_to="12"
-  sequence="100"
+ match="wid"
+ enabled="y"
+ send_to="12"
+ sequence="100"
 >
 <send>
   -- Pull current values safely
@@ -318,39 +318,45 @@ COMMANDS:
   local s_id   = GetVariable("secondweapon") or "N/A"
   local h_name = GetVariable("held") or "None"
   local h_id   = GetVariable("heldid") or "N/A"
-  local mode   = (GetVariable("pref_mode") or "dual"):upper()
+  local mode   = GetVariable("pref_mode") or "dual"
 
   ColourNote("silver", "", "================= ", "cyan", "", "Weapon ID Status", "silver", "", " =================")
   
-  -- We use string formatting to ensure "ID:" starts after the name area
-  -- The item name is printed first, then we use a tab or spaces for the ID
+  -- 1. Always show Primary
   AnsiNote(ColoursToANSI("Primary:   " .. p_name))
   AnsiNote(ColoursToANSI("           @wID: @y" .. p_id))
   Note("")
+
+  -- 2. Conditional Display based on Mode
+  if mode == "dual" then
+    AnsiNote(ColoursToANSI("Secondary: " .. s_name))
+    AnsiNote(ColoursToANSI("           @wID: @y" .. s_id))
+    Note("")
+    ColourNote("cyan", "", "Mode:      ", "yellow", "", "DUAL-WIELD")
+  else
+    AnsiNote(ColoursToANSI("Held:      " .. h_name))
+    AnsiNote(ColoursToANSI("           @wID: @y" .. h_id))
+    Note("")
+    ColourNote("cyan", "", "Mode:      ", "yellow", "", "HELD/STAFF")
+  end
   
-  AnsiNote(ColoursToANSI("Secondary: " .. s_name))
-  AnsiNote(ColoursToANSI("           @wID: @y" .. s_id))
-  Note("")
-  
-  AnsiNote(ColoursToANSI("Held:      " .. h_name))
-  AnsiNote(ColoursToANSI("           @wID: @y" .. h_id))
-  
-  Note("")
-  ColourNote("cyan", "", "Preferred Mode: ", "white", "", mode)
   ColourNote("silver", "", "====================================================")
 </send>
 </alias>
   <alias
-   match="wid off"
+   match="wid sync"
    enabled="y"
    send_to="12"
    sequence="100"
   >
   <send>
+    -- Force-close everything first in case it was stuck
     EnableTriggerGroup("eqdata", false)
+    EnableTriggerGroup("wid_sync_gate", false)
     is_updating = false
-    Note("WID: Manual Sync Triggered...")
-	SyncEquipment()
+    
+    ColourNote("darkorange", "", "WID: Manual ID Sync Triggered...")
+    SyncEquipment()
   </send>
   </alias>
 </aliases>
@@ -404,6 +410,7 @@ end
 function SyncEquipment()
   if not is_updating then
     is_updating = true
+	show_sync_message = true
     -- Turn on the Gatekeepers, they will turn on eqdata when the tag arrives
     EnableTriggerGroup("wid_sync_gate", true) 
     SendNoEcho("eqdata")
@@ -428,11 +435,10 @@ function OnHelp ()
   ColourNote("cyan", "", "  wid      ", "silver", "", " - Status: View tracked IDs and current equip state.")
   ColourNote("cyan", "", "  wid help ", "silver", "", " - Show this help information.")
   Note("")
-  ColourNote("orange", "", "  wid off  ", "silver", "", "- Manual Sync: Force a re-scan of equipment IDs and reset if stuck.")
+  ColourNote("orange", "", "  wid sync ", "silver", "", " - Manual Sync: Force a re-scan of equipment IDs and reset if stuck.")
   ColourNote("silver", "", "============================================================")
   Note("") 
 end
 ]]>
 </script>
 </muclient>
-
