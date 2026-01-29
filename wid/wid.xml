@@ -10,13 +10,17 @@
    save_state="y"
    date_written="2022-01-09 09:40:16"
    requires="5.07"
-   version="1.22"
+   version="1.23"
    >
 <description trim="y">
 <![CDATA[
 ============================================================================
                         WID TRACKER CHANGE LOG
 ============================================================================
+v1.230
+- Quiet Syncing: Equipment triggers now sync IDs silently.
+- Conditional Feedback: Confirmation messages only appear for manual/initial syncs.
+
 v1.220
 - Smart Re-equipping: Improved logic for Dual-Wield and Held modes.
 - Keep-Flag Awareness: Now handles temporary staves/items correctly.
@@ -356,7 +360,7 @@ COMMANDS:
     is_updating = false
     
     ColourNote("darkorange", "", "WID: Manual ID Sync Triggered...")
-    SyncEquipment()
+    SyncEquipment(true)
   </send>
   </alias>
 </aliases>
@@ -401,26 +405,25 @@ function OnPluginBroadcast (msg, id, name, text)
          sync_done = true -- Lock it so it only happens once
 		 show_sync_message = true -- Trigger the message in the tag trigger
 		 ColourNote("darkorange", "", "WID: Performing initial equipment ID sync...")
-         SyncEquipment()
+         SyncEquipment(true)
       end
     end
   end
 end
 
-function SyncEquipment()
+function SyncEquipment(loud)
   if not is_updating then
     is_updating = true
-	show_sync_message = true
-    -- Turn on the Gatekeepers, they will turn on eqdata when the tag arrives
+    
+    -- Only show the message if 'loud' is passed as true
+    if loud then
+      show_sync_message = true
+    else
+      show_sync_message = false
+    end
+
     EnableTriggerGroup("wid_sync_gate", true) 
     SendNoEcho("eqdata")
-    
-    -- Safety: Kill everything if it hangs
-    -- DoAfterSpecial(3, [[
-     -- is_updating = false 
-      -- EnableTriggerGroup("eqdata", false) 
-      -- EnableTriggerGroup("wid_sync_gate", false)
-    -- ]], 12)
   end
 end
 
