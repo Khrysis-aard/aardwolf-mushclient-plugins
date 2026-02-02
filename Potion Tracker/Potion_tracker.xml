@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.64"
+   version="1.65"
   >
   
   <description trim="y">
@@ -23,6 +23,14 @@
 ============================================================================
                     POTION TRACKER CHANGE LOG
 ============================================================================
+v1.65 - INVENTORY MANAGEMENT UPDATE
+----------------------------------------------------------------------------
+* NEW FEATURE:
+  - [PTW BAGSTAFF]: New toggle to automatically put staves/wands back into 
+    your bag after use. Defaults to OFF.
+  - Works when you use a staff then put your weapon back and the staff
+    still has charges on it so it will auto put it away in the bag id set.
+
 v1.64 - TARGETING UPDATE
 ----------------------------------------------------------------------------
 * IMPROVEMENTS:
@@ -41,11 +49,6 @@ v1.600 - MAJOR UPDATE
   - [PTW RESTOCK] : Automation to visit shops, buy, and bag items.
   - [PTW RETURN]  : Mapper-based return to your starting location.
   - [PTW SYNC]    : Instant inventory and container synchronization.
-
-* IMPROVEMENTS:
-  - Expanded tracking: Now supports Scrolls, Food, Pills, Wands, and Staffs.
-  - Staff/Wand Logic: Detection for dropped or newly acquired held items.
-  - Priority Logic: Support for "Super-priority" levels (> 201).
 
 * Type 'ptw help' for full command documentation.
 ============================================================================
@@ -311,6 +314,17 @@ v1.600 - MAJOR UPDATE
   restock_return_room = "-"
   ColourNote("yellow", "", "[PTW] ", "white", "", "Return location cleared.")
 </send>
+</alias>
+
+<!-- Alias to toggle autobag staff -->
+
+<alias
+   match="ptw bagstaff"
+   enabled="y"
+   sequence="100"
+   send_to="12"
+>
+  <send>ToggleStaffBagging()</send>
 </alias>
 
 <!-- Alias for using potions -->
@@ -628,6 +642,25 @@ local class_to_cmd = {
 
 -- New Staff/Wand functions
 
+  -- autobag staff function
+
+function ToggleStaffBagging()
+    -- Default to "0" (off) if the variable doesn't exist yet
+    local current = GetVariable("put_away_staff") or "0"
+    
+    if current == "1" then
+        SetVariable("put_away_staff", "0")
+        Note("")
+        ColourNote("white", "blue", "[PTW]", "yellow", "", " Auto-bagging staves is now: ", "red", "", "OFF")
+    else
+        SetVariable("put_away_staff", "1")
+        Note("")
+        ColourNote("white", "blue", "[PTW]", "yellow", "", " Auto-bagging staves is now: ", "lime", "", "ON")
+    end
+    
+    SaveState()
+end
+
 function OnPutInBag(name, line, wildcards)
     local raw_item = wildcards[1]
     local bag_name = wildcards[2]
@@ -655,7 +688,19 @@ function OnStopHolding(name, line, wildcards)
 
     if potion_inventory[normalized_name] then
         needs_wear_staff = true  
-        SetVariable("needs_wear_staff", "1") -- Remember we need to wear it
+        SetVariable("needs_wear_staff", "1")
+        
+        -- Check if toggle is ON
+        if GetVariable("put_away_staff") == "1" then
+            local data = potion_locations[normalized_name]
+            local keyword = (data and data.buy_kw and data.buy_kw ~= "" and data.buy_kw ~= "-") and data.buy_kw or raw_name
+            local bag_id = next(sync_containers or {})
+
+            if bag_id then
+                SendNoEcho("put " .. keyword .. " " .. bag_id)
+            end
+        end
+
         SaveState()
     end
 end
@@ -1970,7 +2015,8 @@ end
     HelpLine("ptw kw remove <Full Name>", "Remove keyword for a potion.")
     Note("")
     ColourNote(header_col, "", "--- Configuration & Colors ---")
-    HelpLine("ptw order", "Toggle Name:Count or Count:Name.")
+    HelpLine("ptw bagstaff", "Toggle autobaggin staff or not. Defaults to off")
+	HelpLine("ptw order", "Toggle Name:Count or Count:Name.")
     HelpLine("ptw quiet <on|off>", "Silence 'You quaff...' for approved items.")
     HelpLine("ptw font <6-32>", "Change window font size.")
     HelpLine("ptw untracked <on|off>", "Toggle notices for unapproved items.")
@@ -2030,6 +2076,9 @@ end
         end
     end
 
+    -- Get the status of our new toggle
+    local auto_bag_status = GetVariable("put_away_staff") == "1" and "On" or "Off"
+
     -- This function handles the wide spacing before the colon
     local function PrintStatusLine(label, value, value_color, prefix)
         local pre = prefix or ""
@@ -2058,7 +2107,8 @@ end
     PrintStatusLine("Quiet Mode", hide_quaff_messages and "On" or "Off", val_col)
     PrintStatusLine("Untracked Msgs", show_untracked_messages and "On" or "Off", val_col)
     PrintStatusLine("Usage Msgs", show_usage_messages and "On" or "Off", val_col)
-    
+    PrintStatusLine("Auto-Bag Staff", auto_bag_status, val_col) -- Added here
+	
     ColourNote(border_col, "", "|                                                                 |")
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Sync & Restock Settings:"), border_col, "", " |")
     
