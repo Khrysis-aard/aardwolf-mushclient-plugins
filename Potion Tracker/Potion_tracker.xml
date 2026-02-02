@@ -1264,7 +1264,11 @@ end
       else
         font_size = 10
       end
-
+      
+	  -- Initialize the toggle if it doesn't exist so ShowStatus isn't confused
+        if GetVariable("put_away_staff") == nil then
+            SetVariable("put_away_staff", "0")
+        end
       -- Load Boolean Settings (Defaults to False if nil)
         show_untracked_messages = GetVariable("show_untracked_messages") == "true"
         hide_quaff_messages     = GetVariable("hide_quaff_messages") == "true"
